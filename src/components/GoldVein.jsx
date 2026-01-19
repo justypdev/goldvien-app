@@ -205,6 +205,7 @@ export default function GoldVein() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [justActivated, setJustActivated] = useState(false);
 
   useEffect(() => {
     const styleEl = document.createElement('style');
@@ -212,6 +213,10 @@ export default function GoldVein() {
     document.head.appendChild(styleEl);
     return () => styleEl.remove();
   }, []);
+
+  useEffect(() => {
+    setJustActivated(false);
+  }, [address]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -222,8 +227,8 @@ export default function GoldVein() {
   }, []);
 
   const { data: isUserActivated, refetch: refetchActivated } = useReadContract({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'isActivated', args: [address], enabled: !!address });
-  const { data: userProfile, refetch: refetchProfile } = useReadContract({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'getUserProfile', args: [address], enabled: !!address && isUserActivated });
-  const { data: userReferralCode } = useReadContract({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'getReferralCode', args: [address], enabled: !!address && isUserActivated });
+  const { data: userProfile, refetch: refetchProfile } = useReadContract({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'getUserProfile', args: [address], enabled: !!address && (isUserActivated || justActivated) });
+  const { data: userReferralCode, refetch: refetchReferralCode } = useReadContract({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'getReferralCode', args: [address], enabled: !!address && (isUserActivated || justActivated) });
   const { data: globalStats, refetch: refetchStats } = useReadContract({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'getStats' });
   const { data: bgBalance } = useReadContract({ address: BG_TOKEN_ADDRESS, abi: BG_TOKEN_ABI, functionName: 'balanceOf', args: [address], enabled: !!address });
   const { data: allowance, refetch: refetchAllowance } = useReadContract({ address: BG_TOKEN_ADDRESS, abi: BG_TOKEN_ABI, functionName: 'allowance', args: [address, GOLD_VEIN_ADDRESS], enabled: !!address });
@@ -236,7 +241,7 @@ export default function GoldVein() {
   useEffect(() => { if (approveError) { setError(approveError.shortMessage || approveError.message); resetApprove(); } }, [approveError]);
   useEffect(() => { if (activateError) { setError(activateError.shortMessage || activateError.message); resetActivate(); } }, [activateError]);
   useEffect(() => { if (approveSuccess) { refetchAllowance(); setSuccess('✅ Approved! Now click Open Gold Mine'); } }, [approveSuccess]);
-  useEffect(() => { if (activateSuccess) { setShowConfetti(true); setTimeout(() => setShowConfetti(false), 4000); refetchActivated(); refetchProfile(); refetchStats(); setSuccess('🎉 Welcome! Your mine is OPEN!'); } }, [activateSuccess]);
+  useEffect(() => { if (activateSuccess) { setJustActivated(true); setShowConfetti(true); setTimeout(() => setShowConfetti(false), 4000); refetchActivated(); refetchProfile(); refetchReferralCode(); refetchStats(); setSuccess('🎉 Welcome! Your mine is OPEN!'); } }, [activateSuccess]);
 
   const handleApprove = () => { setError(''); setSuccess(''); approve({ address: BG_TOKEN_ADDRESS, abi: BG_TOKEN_ABI, functionName: 'approve', args: [GOLD_VEIN_ADDRESS, parseEther('0.10')] }); };
   const handleActivate = () => { setError(''); setSuccess(''); if (!referrerInput || !isAddress(referrerInput)) { setError('Enter a valid referrer address'); return; } activate({ address: GOLD_VEIN_ADDRESS, abi: GOLD_VEIN_ABI, functionName: 'activate', args: [referrerInput] }); };
@@ -356,7 +361,7 @@ export default function GoldVein() {
               </div>
             </div>
           </div>
-        ) : !isUserActivated ? (
+        ) : !isUserActivated && !justActivated ? (
           <div style={{ maxWidth: '500px', margin: '0 auto' }}>
             <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '2px solid rgba(234,179,8,0.5)', borderRadius: '24px', padding: '40px' }}>
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
