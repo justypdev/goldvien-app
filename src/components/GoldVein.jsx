@@ -1,19 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  ConnectWallet,
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-} from '@coinbase/onchainkit/wallet';
-import {
-  Address,
-  Avatar,
-  Name,
-  Identity,
-  EthBalance,
-} from '@coinbase/onchainkit/identity';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { 
   useAccount, 
   useReadContract, 
@@ -47,7 +35,6 @@ const GOLD_VEIN_ABI = [
   ]},
 ];
 
-// CSS as a string to inject
 const globalStyles = `
   @keyframes floatUp {
     0% { transform: translateY(0); opacity: 0; }
@@ -219,7 +206,6 @@ export default function GoldVein() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Inject global styles
   useEffect(() => {
     const styleEl = document.createElement('style');
     styleEl.textContent = globalStyles;
@@ -277,7 +263,6 @@ export default function GoldVein() {
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', position: 'relative', overflow: 'hidden' }}>
       <GoldParticles />
 
-      {/* Toasts */}
       {error && (
         <div style={{ position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: 'rgba(127,29,29,0.95)', border: '1px solid #EF4444', padding: '16px 24px', borderRadius: '12px', maxWidth: '400px' }}>
           <span style={{ color: '#FCA5A5' }}>{error}</span>
@@ -291,7 +276,6 @@ export default function GoldVein() {
         </div>
       )}
 
-      {/* Confetti */}
       {showConfetti && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50, overflow: 'hidden' }}>
           {Array.from({ length: 50 }).map((_, i) => (
@@ -318,15 +302,7 @@ export default function GoldVein() {
               <p style={{ color: '#CA8A04', fontSize: '14px', margin: 0 }}>7-Level Passive Income</p>
             </div>
           </div>
-          <Wallet>
-            <ConnectWallet className="!bg-gradient-to-r !from-yellow-500 !to-yellow-600 hover:!from-yellow-400 hover:!to-yellow-500 !text-black !font-bold !px-6 !py-3 !rounded-xl !shadow-lg !border-0">
-              <Avatar className="h-6 w-6" /><Name />
-            </ConnectWallet>
-            <WalletDropdown>
-              <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick><Avatar /><Name /><Address /><EthBalance /></Identity>
-              <WalletDropdownDisconnect />
-            </WalletDropdown>
-          </Wallet>
+          <ConnectButton />
         </header>
 
         {/* Stats Grid */}
@@ -346,7 +322,6 @@ export default function GoldVein() {
 
         {/* Main Content */}
         {!isConnected ? (
-          /* Landing Page */
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ width: '120px', height: '120px', margin: '0 auto 32px', borderRadius: '50%', overflow: 'hidden', border: '4px solid rgba(234,179,8,0.5)', boxShadow: '0 0 40px rgba(234,179,8,0.3)', animation: 'pulseGlow 2s ease-in-out infinite' }}>
               <img src="https://basegold.io/logov2.jpg" alt="BG" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -354,7 +329,6 @@ export default function GoldVein() {
             <h2 style={{ fontSize: '42px', fontWeight: '900', marginBottom: '16px', background: 'linear-gradient(to right, #FBBF24, #FDE047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Enter the Gold Vein</h2>
             <p style={{ color: '#CA8A04', fontSize: '18px', maxWidth: '500px', margin: '0 auto 40px' }}>Mine passive income through 7 levels of referrals. Connect your wallet to get started.</p>
 
-            {/* Feature Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '800px', margin: '0 auto 40px' }}>
               <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.4), rgba(0,0,0,0.6))', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '16px', padding: '24px' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px' }}>💰</div>
@@ -373,7 +347,6 @@ export default function GoldVein() {
               </div>
             </div>
 
-            {/* Level Distribution */}
             <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '16px', padding: '24px', maxWidth: '600px', margin: '0 auto' }}>
               <div style={{ color: '#FBBF24', fontWeight: 'bold', marginBottom: '16px', fontSize: '18px' }}>7-Level Distribution</div>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -384,7 +357,6 @@ export default function GoldVein() {
             </div>
           </div>
         ) : !isUserActivated ? (
-          /* Activation */
           <div style={{ maxWidth: '500px', margin: '0 auto' }}>
             <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '2px solid rgba(234,179,8,0.5)', borderRadius: '24px', padding: '40px' }}>
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -393,7 +365,6 @@ export default function GoldVein() {
                 <p style={{ color: '#CA8A04', fontSize: '18px' }}>Activation Fee: <strong>0.10 BG</strong></p>
               </div>
 
-              {/* Balance Display */}
               <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid #374151' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: '#9CA3AF', fontSize: '16px' }}>Your BG Balance:</span>
@@ -402,7 +373,6 @@ export default function GoldVein() {
                 {hasBalance && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px', textAlign: 'right' }}>✓ Sufficient balance</div>}
               </div>
 
-              {/* Referrer Input */}
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'block', color: '#EAB308', marginBottom: '8px', fontWeight: 'bold', fontSize: '16px' }}>Referrer Address</label>
                 <input 
@@ -415,7 +385,6 @@ export default function GoldVein() {
                 {referrerInput && isAddress(referrerInput) && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px' }}>✓ Valid address</div>}
               </div>
 
-              {/* Action Button */}
               {needsApproval ? (
                 <button onClick={handleApprove} disabled={isApproving || !hasBalance} style={buttonStyle(hasBalance && !isApproving)}>
                   {isApproving ? '⏳ Approving...' : '1️⃣ APPROVE BG TOKEN'}
@@ -426,7 +395,6 @@ export default function GoldVein() {
                 </button>
               )}
 
-              {/* Step Indicator */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: needsApproval ? '#EAB308' : '#22C55E', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>{needsApproval ? '1' : '✓'}</div>
@@ -441,9 +409,7 @@ export default function GoldVein() {
             </div>
           </div>
         ) : (
-          /* Dashboard */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Referral Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
               <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '1px solid rgba(234,179,8,0.4)', borderRadius: '16px', padding: '24px' }}>
                 <h3 style={{ color: '#FBBF24', fontWeight: 'bold', marginBottom: '16px', fontSize: '18px' }}>🔗 Your Referral Link</h3>
@@ -465,13 +431,11 @@ export default function GoldVein() {
               </div>
             </div>
 
-            {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid #374151' }}>
               <button onClick={() => setActiveTab('tree')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', background: activeTab === 'tree' ? 'linear-gradient(to right, #EAB308, #F59E0B)' : 'transparent', color: activeTab === 'tree' ? '#000' : '#CA8A04', fontSize: '16px' }}>🌳 Tree</button>
               <button onClick={() => setActiveTab('calculator')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', background: activeTab === 'calculator' ? 'linear-gradient(to right, #EAB308, #F59E0B)' : 'transparent', color: activeTab === 'calculator' ? '#000' : '#CA8A04', fontSize: '16px' }}>🧮 Calculator</button>
             </div>
 
-            {/* Tab Content */}
             <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.2), rgba(0,0,0,0.6))', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '16px', padding: '24px' }}>
               {activeTab === 'tree' && <ReferralTree userProfile={userProfile} />}
               {activeTab === 'calculator' && <Calculator />}
@@ -479,7 +443,6 @@ export default function GoldVein() {
           </div>
         )}
 
-        {/* Footer */}
         <footer style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid rgba(234,179,8,0.2)', textAlign: 'center' }}>
           <div style={{ color: '#EAB308', fontWeight: 'bold', marginBottom: '8px' }}>GOLD VEIN by BaseGold.io</div>
           <div style={{ color: '#4B5563', fontSize: '14px' }}>95% to users • 5% burned • No middleman</div>
