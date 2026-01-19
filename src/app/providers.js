@@ -9,8 +9,11 @@ import { coinbaseWallet, metaMask, injected } from 'wagmi/connectors';
 const config = createConfig({
   chains: [base],
   connectors: [
-    coinbaseWallet({ appName: 'Gold Vein', preference: 'smartWalletOnly' }),
     metaMask(),
+    coinbaseWallet({
+      appName: 'Gold Vein',
+      preference: 'all',  // Changed from 'smartWalletOnly'
+    }),
     injected(),
   ],
   transports: {
