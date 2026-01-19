@@ -22,7 +22,6 @@ import {
 } from 'wagmi';
 import { parseEther, formatEther, isAddress } from 'viem';
 
-// Contract addresses
 const BG_TOKEN_ADDRESS = '0x36b712A629095234F2196BbB000D1b96C12Ce78e';
 const GOLD_VEIN_ADDRESS = '0x0520B1D4dF671293F8b4B1F52dDD4f9f687Fd565';
 
@@ -48,14 +47,35 @@ const GOLD_VEIN_ABI = [
   ]},
 ];
 
-// Floating particles component
+// CSS as a string to inject
+const globalStyles = `
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(-100vh); opacity: 0; }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(234,179,8,0.4), 0 0 40px rgba(234,179,8,0.2); }
+    50% { box-shadow: 0 0 30px rgba(234,179,8,0.6), 0 0 60px rgba(234,179,8,0.3); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+`;
+
 function GoldParticles() {
   const particles = useMemo(() => Array.from({ length: 30 }, (_, i) => ({
     id: i, left: Math.random() * 100, delay: Math.random() * 10, duration: 10 + Math.random() * 10, size: 2 + Math.random() * 3,
   })), []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
       {particles.map((p) => (
         <div key={p.id} style={{
           position: 'absolute', left: `${p.left}%`, bottom: '-10px', width: `${p.size}px`, height: `${p.size}px`,
@@ -67,7 +87,6 @@ function GoldParticles() {
   );
 }
 
-// Animated number
 function AnimatedNumber({ value, decimals = 0 }) {
   const [display, setDisplay] = useState(0);
   const prevRef = useRef(0);
@@ -87,7 +106,6 @@ function AnimatedNumber({ value, decimals = 0 }) {
   return <>{display.toFixed(decimals)}</>;
 }
 
-// Referral Tree
 function ReferralTree({ userProfile }) {
   const levels = [
     { name: 'L1', pct: '60%', amt: '0.060', color: '#EAB308' },
@@ -154,7 +172,6 @@ function ReferralTree({ userProfile }) {
   );
 }
 
-// Calculator
 function Calculator() {
   const [refs, setRefs] = useState(2);
   const amounts = [0.060, 0.014, 0.009, 0.005, 0.004, 0.002, 0.001];
@@ -172,7 +189,7 @@ function Calculator() {
           If everyone refers <span style={{ fontSize: '32px', fontWeight: '900', color: '#FDE047' }}>{refs}</span> people:
         </label>
         <input type="range" min="2" max="10" value={refs} onChange={(e) => setRefs(parseInt(e.target.value))}
-          style={{ width: '100%', height: '12px', borderRadius: '8px', appearance: 'none', background: '#374151', cursor: 'pointer', accentColor: '#EAB308' }} />
+          style={{ width: '100%', height: '12px', borderRadius: '8px', cursor: 'pointer' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#6B7280', marginTop: '4px' }}><span>2</span><span>10</span></div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -193,7 +210,6 @@ function Calculator() {
   );
 }
 
-// Main component
 export default function GoldVein() {
   const { address, isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState('tree');
@@ -202,6 +218,14 @@ export default function GoldVein() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Inject global styles
+  useEffect(() => {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = globalStyles;
+    document.head.appendChild(styleEl);
+    return () => styleEl.remove();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -236,27 +260,34 @@ export default function GoldVein() {
   const hasBalance = bgBalance && bgBalance >= parseEther('0.10');
   const fmtBG = (v) => v ? parseFloat(formatEther(v)).toFixed(4) : '0.0000';
 
+  const buttonStyle = (enabled) => ({
+    width: '100%',
+    background: enabled ? 'linear-gradient(to right, #EAB308, #F59E0B)' : '#374151',
+    color: enabled ? '#000' : '#6B7280',
+    fontWeight: 'bold',
+    padding: '18px',
+    borderRadius: '12px',
+    fontSize: '18px',
+    border: 'none',
+    cursor: enabled ? 'pointer' : 'not-allowed',
+    boxShadow: enabled ? '0 0 30px rgba(234,179,8,0.4)' : 'none',
+  });
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', position: 'relative', overflow: 'hidden' }}>
-      <style jsx global>{`
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { transform: translateY(-100vh); opacity: 0; } }
-        @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 20px rgba(234,179,8,0.4), 0 0 40px rgba(234,179,8,0.2); } 50% { box-shadow: 0 0 30px rgba(234,179,8,0.6), 0 0 60px rgba(234,179,8,0.3); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-      `}</style>
-
       <GoldParticles />
 
       {/* Toasts */}
       {error && (
         <div style={{ position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: 'rgba(127,29,29,0.95)', border: '1px solid #EF4444', padding: '16px 24px', borderRadius: '12px', maxWidth: '400px' }}>
           <span style={{ color: '#FCA5A5' }}>{error}</span>
-          <button onClick={() => setError('')} style={{ marginLeft: '16px', color: '#FCA5A5', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setError('')} style={{ marginLeft: '16px', color: '#FCA5A5', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>✕</button>
         </div>
       )}
       {success && (
         <div style={{ position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: 'rgba(20,83,45,0.95)', border: '1px solid #22C55E', padding: '16px 24px', borderRadius: '12px', maxWidth: '400px' }}>
           <span style={{ color: '#86EFAC' }}>{success}</span>
-          <button onClick={() => setSuccess('')} style={{ marginLeft: '16px', color: '#86EFAC', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setSuccess('')} style={{ marginLeft: '16px', color: '#86EFAC', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>✕</button>
         </div>
       )}
 
@@ -272,7 +303,6 @@ export default function GoldVein() {
               animation: `confettiFall 3s ease-out forwards`, animationDelay: `${Math.random() * 0.5}s`,
             }} />
           ))}
-          <style jsx>{`@keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }`}</style>
         </div>
       )}
 
@@ -318,19 +348,11 @@ export default function GoldVein() {
         {!isConnected ? (
           /* Landing Page */
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <div style={{ 
-              width: '120px', height: '120px', margin: '0 auto 32px', borderRadius: '50%', overflow: 'hidden',
-              border: '4px solid rgba(234,179,8,0.5)', boxShadow: '0 0 40px rgba(234,179,8,0.3)',
-              animation: 'pulseGlow 2s ease-in-out infinite'
-            }}>
+            <div style={{ width: '120px', height: '120px', margin: '0 auto 32px', borderRadius: '50%', overflow: 'hidden', border: '4px solid rgba(234,179,8,0.5)', boxShadow: '0 0 40px rgba(234,179,8,0.3)', animation: 'pulseGlow 2s ease-in-out infinite' }}>
               <img src="https://basegold.io/logov2.jpg" alt="BG" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h2 style={{ fontSize: '42px', fontWeight: '900', marginBottom: '16px', background: 'linear-gradient(to right, #FBBF24, #FDE047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Enter the Gold Vein
-            </h2>
-            <p style={{ color: '#CA8A04', fontSize: '18px', maxWidth: '500px', margin: '0 auto 40px' }}>
-              Mine passive income through 7 levels of referrals. Connect your wallet to get started.
-            </p>
+            <h2 style={{ fontSize: '42px', fontWeight: '900', marginBottom: '16px', background: 'linear-gradient(to right, #FBBF24, #FDE047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Enter the Gold Vein</h2>
+            <p style={{ color: '#CA8A04', fontSize: '18px', maxWidth: '500px', margin: '0 auto 40px' }}>Mine passive income through 7 levels of referrals. Connect your wallet to get started.</p>
 
             {/* Feature Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '800px', margin: '0 auto 40px' }}>
@@ -363,35 +385,59 @@ export default function GoldVein() {
           </div>
         ) : !isUserActivated ? (
           /* Activation */
-          <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-            <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '1px solid rgba(234,179,8,0.4)', borderRadius: '24px', padding: '32px' }}>
+          <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+            <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '2px solid rgba(234,179,8,0.5)', borderRadius: '24px', padding: '40px' }}>
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                <div style={{ width: '80px', height: '80px', margin: '0 auto 16px', borderRadius: '50%', background: 'linear-gradient(135deg, #EAB308, #F59E0B)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', boxShadow: '0 0 30px rgba(234,179,8,0.5)', animation: 'float 3s ease-in-out infinite' }}>⛏️</div>
-                <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#FBBF24', marginBottom: '8px' }}>Open Your Gold Mine</h2>
-                <p style={{ color: '#CA8A04', fontSize: '16px' }}>Activation Fee: 0.10 BG</p>
+                <div style={{ width: '100px', height: '100px', margin: '0 auto 20px', borderRadius: '50%', background: 'linear-gradient(135deg, #EAB308, #F59E0B)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '50px', boxShadow: '0 0 40px rgba(234,179,8,0.5)', animation: 'bounce 2s ease-in-out infinite' }}>⛏️</div>
+                <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#FBBF24', marginBottom: '8px' }}>Open Your Gold Mine</h2>
+                <p style={{ color: '#CA8A04', fontSize: '18px' }}>Activation Fee: <strong>0.10 BG</strong></p>
               </div>
-              <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '16px', marginBottom: '24px', border: '1px solid #374151' }}>
+
+              {/* Balance Display */}
+              <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid #374151' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#9CA3AF' }}>Your BG Balance:</span>
-                  <span style={{ fontWeight: 'bold', fontSize: '18px', color: hasBalance ? '#4ADE80' : '#EF4444' }}>{fmtBG(bgBalance)} BG</span>
+                  <span style={{ color: '#9CA3AF', fontSize: '16px' }}>Your BG Balance:</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '24px', color: hasBalance ? '#4ADE80' : '#EF4444' }}>{fmtBG(bgBalance)} BG</span>
                 </div>
+                {hasBalance && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px', textAlign: 'right' }}>✓ Sufficient balance</div>}
               </div>
+
+              {/* Referrer Input */}
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', color: '#EAB308', marginBottom: '8px', fontWeight: '500' }}>Referrer Address</label>
-                <input type="text" value={referrerInput} onChange={(e) => setReferrerInput(e.target.value)} placeholder="0x..."
-                  style={{ width: '100%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '12px', padding: '16px', color: '#fff', fontSize: '14px', fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', color: '#EAB308', marginBottom: '8px', fontWeight: 'bold', fontSize: '16px' }}>Referrer Address</label>
+                <input 
+                  type="text" 
+                  value={referrerInput} 
+                  onChange={(e) => setReferrerInput(e.target.value)} 
+                  placeholder="0x..."
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.6)', border: '2px solid rgba(234,179,8,0.3)', borderRadius: '12px', padding: '16px', color: '#fff', fontSize: '16px', fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box' }} 
+                />
+                {referrerInput && isAddress(referrerInput) && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px' }}>✓ Valid address</div>}
               </div>
+
+              {/* Action Button */}
               {needsApproval ? (
-                <button onClick={handleApprove} disabled={isApproving || !hasBalance}
-                  style={{ width: '100%', background: hasBalance && !isApproving ? 'linear-gradient(to right, #EAB308, #F59E0B)' : '#374151', color: hasBalance && !isApproving ? '#000' : '#6B7280', fontWeight: 'bold', padding: '16px', borderRadius: '12px', fontSize: '18px', border: 'none', cursor: hasBalance && !isApproving ? 'pointer' : 'not-allowed' }}>
-                  {isApproving ? '⏳ Approving...' : '1️⃣ Approve BG Token'}
+                <button onClick={handleApprove} disabled={isApproving || !hasBalance} style={buttonStyle(hasBalance && !isApproving)}>
+                  {isApproving ? '⏳ Approving...' : '1️⃣ APPROVE BG TOKEN'}
                 </button>
               ) : (
-                <button onClick={handleActivate} disabled={isActivating || !hasBalance || !referrerInput}
-                  style={{ width: '100%', background: hasBalance && !isActivating && referrerInput ? 'linear-gradient(to right, #EAB308, #F59E0B)' : '#374151', color: hasBalance && !isActivating && referrerInput ? '#000' : '#6B7280', fontWeight: 'bold', padding: '16px', borderRadius: '12px', fontSize: '18px', border: 'none', cursor: hasBalance && !isActivating && referrerInput ? 'pointer' : 'not-allowed' }}>
-                  {isActivating ? '⛏️ Opening...' : '⛏️ Open Gold Mine (0.10 BG)'}
+                <button onClick={handleActivate} disabled={isActivating || !hasBalance || !referrerInput || !isAddress(referrerInput)} style={buttonStyle(hasBalance && !isActivating && referrerInput && isAddress(referrerInput))}>
+                  {isActivating ? '⛏️ Opening Mine...' : '⛏️ OPEN GOLD MINE (0.10 BG)'}
                 </button>
               )}
+
+              {/* Step Indicator */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: needsApproval ? '#EAB308' : '#22C55E', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>{needsApproval ? '1' : '✓'}</div>
+                  <span style={{ color: needsApproval ? '#EAB308' : '#22C55E', fontSize: '14px' }}>Approve</span>
+                </div>
+                <div style={{ width: '40px', height: '2px', background: '#374151', alignSelf: 'center' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: !needsApproval ? '#EAB308' : '#374151', color: !needsApproval ? '#000' : '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>2</div>
+                  <span style={{ color: !needsApproval ? '#EAB308' : '#6B7280', fontSize: '14px' }}>Activate</span>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -404,8 +450,7 @@ export default function GoldVein() {
                 <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '12px', padding: '16px', marginBottom: '16px', border: '1px solid #374151', wordBreak: 'break-all' }}>
                   <code style={{ color: '#FDE047', fontSize: '13px' }}>https://goldvien-app.vercel.app?ref={address}</code>
                 </div>
-                <button onClick={() => copyText(`https://goldvien-app.vercel.app?ref=${address}`)}
-                  style={{ width: '100%', background: 'linear-gradient(to right, #EAB308, #F59E0B)', color: '#000', fontWeight: 'bold', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                <button onClick={() => copyText(`https://goldvien-app.vercel.app?ref=${address}`)} style={{ width: '100%', background: 'linear-gradient(to right, #EAB308, #F59E0B)', color: '#000', fontWeight: 'bold', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '16px' }}>
                   {copied ? '✓ Copied!' : '📋 Copy Link'}
                 </button>
               </div>
@@ -414,8 +459,7 @@ export default function GoldVein() {
                 <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '12px', padding: '16px', marginBottom: '16px', textAlign: 'center', border: '1px solid #374151' }}>
                   <code style={{ fontSize: '32px', fontWeight: '900', color: '#FBBF24', letterSpacing: '4px' }}>{userReferralCode || '...'}</code>
                 </div>
-                <button onClick={() => copyText(userReferralCode || '')}
-                  style={{ width: '100%', background: 'linear-gradient(to right, #EAB308, #F59E0B)', color: '#000', fontWeight: 'bold', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer' }}>
+                <button onClick={() => copyText(userReferralCode || '')} style={{ width: '100%', background: 'linear-gradient(to right, #EAB308, #F59E0B)', color: '#000', fontWeight: 'bold', padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '16px' }}>
                   📋 Copy Code
                 </button>
               </div>
@@ -423,8 +467,8 @@ export default function GoldVein() {
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid #374151' }}>
-              <button onClick={() => setActiveTab('tree')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', background: activeTab === 'tree' ? 'linear-gradient(to right, #EAB308, #F59E0B)' : 'transparent', color: activeTab === 'tree' ? '#000' : '#CA8A04' }}>🌳 Tree</button>
-              <button onClick={() => setActiveTab('calculator')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', background: activeTab === 'calculator' ? 'linear-gradient(to right, #EAB308, #F59E0B)' : 'transparent', color: activeTab === 'calculator' ? '#000' : '#CA8A04' }}>🧮 Calculator</button>
+              <button onClick={() => setActiveTab('tree')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', background: activeTab === 'tree' ? 'linear-gradient(to right, #EAB308, #F59E0B)' : 'transparent', color: activeTab === 'tree' ? '#000' : '#CA8A04', fontSize: '16px' }}>🌳 Tree</button>
+              <button onClick={() => setActiveTab('calculator')} style={{ padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', background: activeTab === 'calculator' ? 'linear-gradient(to right, #EAB308, #F59E0B)' : 'transparent', color: activeTab === 'calculator' ? '#000' : '#CA8A04', fontSize: '16px' }}>🧮 Calculator</button>
             </div>
 
             {/* Tab Content */}
@@ -439,7 +483,7 @@ export default function GoldVein() {
         <footer style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid rgba(234,179,8,0.2)', textAlign: 'center' }}>
           <div style={{ color: '#EAB308', fontWeight: 'bold', marginBottom: '8px' }}>GOLD VEIN by BaseGold.io</div>
           <div style={{ color: '#4B5563', fontSize: '14px' }}>95% to users • 5% burned • No middleman</div>
-          <a href={`https://basescan.org/address/${GOLD_VEIN_ADDRESS}`} target="_blank" rel="noopener noreferrer" style={{ color: '#CA8A04', fontSize: '14px', marginTop: '8px', display: 'inline-block' }}>View Contract ↗</a>
+          <a href={`https://basescan.org/address/${GOLD_VEIN_ADDRESS}`} target="_blank" rel="noopener noreferrer" style={{ color: '#CA8A04', fontSize: '14px', marginTop: '8px', display: 'inline-block', textDecoration: 'none' }}>View Contract ↗</a>
         </footer>
       </div>
     </div>
