@@ -4,16 +4,14 @@ import { OnchainKitProvider } from '@coinbase/onchainkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { base } from 'wagmi/chains';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { coinbaseWallet, metaMask, injected } from 'wagmi/connectors';
+import { coinbaseWallet } from 'wagmi/connectors';
 
 const config = createConfig({
   chains: [base],
   connectors: [
-    metaMask(),
-    injected(),
     coinbaseWallet({
       appName: 'Gold Vein',
-      preference: 'eoaOnly',  // Forces regular wallet, no Smart Wallet
+      preference: 'all',  // Let user choose between Smart Wallet or regular
     }),
   ],
   transports: {
