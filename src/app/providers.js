@@ -10,11 +10,11 @@ const config = createConfig({
   chains: [base],
   connectors: [
     metaMask(),
+    injected(),
     coinbaseWallet({
       appName: 'Gold Vein',
-      preference: 'all',  // Changed from 'smartWalletOnly'
+      preference: 'eoaOnly',  // Forces regular wallet, no Smart Wallet
     }),
-    injected(),
   ],
   transports: {
     [base.id]: http(),
