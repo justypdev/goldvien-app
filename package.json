@@ -1,0 +1,16 @@
+{
+  "name": "goldvein-contracts",
+  "version": "1.0.0",
+  "description": "Gold Vein - 7-Level Referral Mining for BaseGold",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:testnet": "hardhat run scripts/deploy-goldvein.js --network baseSepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy-goldvein.js --network base",
+    "verify": "hardhat verify --network base"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.3.1"
+  }
+}
