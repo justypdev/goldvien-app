@@ -1,63 +1,40 @@
 import { NextResponse } from 'next/server';
-import * as jose from 'jose';
+import { generateJwt } from '@coinbase/cdp-sdk/auth';
 
 export async function POST(request) {
+  let address = '';
+  
   try {
-    const { address } = await request.json();
+    const body = await request.json();
+    address = body.address || '';
     
     if (!address) {
       return NextResponse.json({ error: 'Address required' }, { status: 400 });
     }
 
     const keyId = process.env.CDP_API_KEY_ID;
-    const privateKeyPem = process.env.CDP_API_KEY_SECRET;
+    const keySecret = process.env.CDP_API_KEY_SECRET;
 
-    if (!keyId || !privateKeyPem) {
-      console.error('Missing CDP API credentials');
-      // Fallback to direct URL
+    if (!keyId || !keySecret) {
+      console.log('No CDP credentials, using fallback');
       return NextResponse.json({ 
         fallback: true,
-        url: `https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`
+        url: buildFallbackUrl(address)
       });
     }
 
-    // Convert the private key (handle \n as actual newlines)
-    const formattedKey = privateKeyPem.replace(/\\n/g, '\n');
-    
-    // Import the EC private key (SEC1 format)
-    const privateKey = await jose.importPKCS8(
-      formattedKey.replace('EC PRIVATE KEY', 'PRIVATE KEY'), 
-      'ES256'
-    ).catch(async () => {
-      // If PKCS8 fails, try importing as JWK after conversion
-      const ecKey = await crypto.subtle.importKey(
-        'pkcs8',
-        pemToBuffer(formattedKey),
-        { name: 'ECDSA', namedCurve: 'P-256' },
-        true,
-        ['sign']
-      );
-      return ecKey;
-    });
+    // Format the secret - replace escaped newlines with actual newlines
+    const formattedSecret = keySecret.replace(/\\n/g, '\n');
 
-    // Create JWT
-    const now = Math.floor(Date.now() / 1000);
-    const jwt = await new jose.SignJWT({
-      sub: keyId,
-      iss: 'cdp',
-      aud: ['cdp_service'],
-      uris: ['https://api.developer.coinbase.com/onramp/v1/token'],
-    })
-      .setProtectedHeader({ 
-        alg: 'ES256', 
-        kid: keyId,
-        typ: 'JWT',
-        nonce: crypto.randomUUID(),
-      })
-      .setIssuedAt(now)
-      .setNotBefore(now)
-      .setExpirationTime(now + 120)
-      .sign(privateKey);
+    // Generate JWT using the official CDP SDK
+    const jwt = await generateJwt({
+      apiKeyId: keyId,
+      apiKeySecret: formattedSecret,
+      requestMethod: 'POST',
+      requestHost: 'api.developer.coinbase.com',
+      requestPath: '/onramp/v1/token',
+      expiresIn: 120
+    });
 
     // Request session token from Coinbase
     const response = await fetch('https://api.developer.coinbase.com/onramp/v1/token', {
@@ -67,23 +44,20 @@ export async function POST(request) {
         'Authorization': `Bearer ${jwt}`,
       },
       body: JSON.stringify({
-        destination_wallets: [
-          {
-            address: address,
-            blockchains: ['base'],
-            assets: ['ETH'],
-          },
-        ],
+        destination_wallets: [{
+          address: address,
+          blockchains: ['base'],
+          assets: ['ETH'],
+        }],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('CDP API error:', response.status, errorText);
-      // Fallback on error
       return NextResponse.json({ 
         fallback: true,
-        url: `https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`
+        url: buildFallbackUrl(address)
       });
     }
 
@@ -96,35 +70,23 @@ export async function POST(request) {
       });
     }
 
-    // Fallback
     return NextResponse.json({ 
       fallback: true,
-      url: `https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`
+      url: buildFallbackUrl(address)
     });
     
   } catch (error) {
-    console.error('Session token error:', error);
-    // Fallback on any error
-    const body = await request.clone().json().catch(() => ({}));
+    console.error('Session token error:', error.message);
     return NextResponse.json({ 
       fallback: true,
-      url: `https://pay.coinbase.com/buy/select-asset?addresses={"${body.address || ''}":["base"]}&assets=["ETH"]`
+      url: buildFallbackUrl(address)
     });
   }
 }
 
-// Helper to convert PEM to buffer
-function pemToBuffer(pem) {
-  const base64 = pem
-    .replace(/-----BEGIN.*-----/, '')
-    .replace(/-----END.*-----/, '')
-    .replace(/\s/g, '');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
+function buildFallbackUrl(address) {
+  const addr = address || '0x0000000000000000000000000000000000000000';
+  return `https://pay.coinbase.com/buy/select-asset?addresses=${encodeURIComponent(JSON.stringify({[addr]: ["base"]}))}&assets=${encodeURIComponent(JSON.stringify(["ETH"]))}`;
 }
 
 
