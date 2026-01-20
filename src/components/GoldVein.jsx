@@ -307,7 +307,32 @@ export default function GoldVein() {
               <p style={{ color: '#CA8A04', fontSize: '14px', margin: 0 }}>7-Level Passive Income</p>
             </div>
           </div>
-          <ConnectButton />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <a 
+              href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ 
+                background: 'linear-gradient(135deg, #22C55E, #16a34a)', 
+                color: '#000', 
+                padding: '10px 16px', 
+                borderRadius: '12px', 
+                textDecoration: 'none', 
+                fontWeight: 'bold', 
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 15px rgba(34,197,94,0.3)',
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(34,197,94,0.4)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(34,197,94,0.3)'; }}
+            >
+              💰 Buy BG
+            </a>
+            <ConnectButton />
+          </div>
         </header>
 
         {/* Stats Grid */}
@@ -375,7 +400,29 @@ export default function GoldVein() {
                   <span style={{ color: '#9CA3AF', fontSize: '16px' }}>Your BG Balance:</span>
                   <span style={{ fontWeight: 'bold', fontSize: '24px', color: hasBalance ? '#4ADE80' : '#EF4444' }}>{fmtBG(bgBalance)} BG</span>
                 </div>
-                {hasBalance && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px', textAlign: 'right' }}>✓ Sufficient balance</div>}
+                {hasBalance ? (
+                  <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px', textAlign: 'right' }}>✓ Sufficient balance</div>
+                ) : (
+                  <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                    <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '8px' }}>⚠️ You need at least 0.10 BG to activate</div>
+                    <a 
+                      href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px', 
+                        color: '#4ADE80', 
+                        fontSize: '14px', 
+                        fontWeight: 'bold',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      💰 Buy BG on Uniswap →
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div style={{ marginBottom: '24px' }}>
