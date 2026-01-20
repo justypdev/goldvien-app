@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { FundButton } from '@coinbase/onchainkit/fund';
 import { 
   useAccount, 
   useReadContract, 
@@ -309,14 +308,48 @@ export default function GoldVein() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="fund-button-wrapper" style={{
-              background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
-              borderRadius: '12px',
-              padding: '2px',
-              boxShadow: '0 4px 15px rgba(0,82,255,0.3)',
-            }}>
-              <FundButton />
-            </div>
+            <button
+              onClick={async () => {
+                if (!address) {
+                  setError('Please connect your wallet first');
+                  return;
+                }
+                try {
+                  const res = await fetch('/api/onramp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address }),
+                  });
+                  const data = await res.json();
+                  if (data.url || data.fallback) {
+                    window.open(data.url, '_blank');
+                  } else if (data.token) {
+                    window.open(`https://pay.coinbase.com/buy?sessionToken=${data.token}`, '_blank');
+                  }
+                } catch (err) {
+                  window.open(`https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`, '_blank');
+                }
+              }}
+              style={{ 
+                background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
+                color: '#fff', 
+                padding: '10px 16px', 
+                borderRadius: '12px', 
+                border: 'none',
+                fontWeight: 'bold', 
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 15px rgba(0,82,255,0.3)',
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,82,255,0.4)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,82,255,0.3)'; }}
+            >
+              💳 Fund
+            </button>
             <a 
               href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
               target="_blank" 
@@ -415,14 +448,41 @@ export default function GoldVein() {
                   <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
                     <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '12px' }}>⚠️ You need at least 0.10 BG to activate</div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <div style={{
-                        background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
-                        borderRadius: '8px',
-                        padding: '2px',
-                        display: 'inline-block'
-                      }}>
-                        <FundButton />
-                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!address) return;
+                          try {
+                            const res = await fetch('/api/onramp', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ address }),
+                            });
+                            const data = await res.json();
+                            if (data.url || data.fallback) {
+                              window.open(data.url, '_blank');
+                            } else if (data.token) {
+                              window.open(`https://pay.coinbase.com/buy?sessionToken=${data.token}`, '_blank');
+                            }
+                          } catch (err) {
+                            window.open(`https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`, '_blank');
+                          }
+                        }}
+                        style={{
+                          background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
+                          color: '#fff',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        💳 Buy ETH
+                      </button>
                       <a 
                         href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
                         target="_blank" 
