@@ -4,6 +4,7 @@ import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rai
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { base } from 'wagmi/chains';
+import { OnchainKitProvider } from '@coinbase/onchainkit';
 import '@rainbow-me/rainbowkit/styles.css';
 
 const config = getDefaultConfig({
@@ -19,15 +20,21 @@ export function Providers({ children }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={darkTheme({
-            accentColor: '#EAB308',
-            accentColorForeground: 'black',
-            borderRadius: 'large',
-          })}
+        <OnchainKitProvider
+          apiKey={process.env.NEXT_PUBLIC_CDP_API_KEY}
+          projectId={process.env.NEXT_PUBLIC_CDP_PROJECT_ID}
+          chain={base}
         >
-          {children}
-        </RainbowKitProvider>
+          <RainbowKitProvider
+            theme={darkTheme({
+              accentColor: '#EAB308',
+              accentColorForeground: 'black',
+              borderRadius: 'large',
+            })}
+          >
+            {children}
+          </RainbowKitProvider>
+        </OnchainKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
