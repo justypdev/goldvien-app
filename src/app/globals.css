@@ -15,6 +15,31 @@ body {
   min-height: 100vh;
 }
 
+/* OnchainKit FundButton Override - Base Blue Style */
+[data-testid="ockFundButton"],
+.ock-fund-button,
+button[class*="FundButton"],
+.fund-button-wrapper button {
+  background: linear-gradient(135deg, #0052FF, #3B82F6) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 15px rgba(0, 82, 255, 0.3) !important;
+}
+
+[data-testid="ockFundButton"]:hover,
+.ock-fund-button:hover,
+button[class*="FundButton"]:hover,
+.fund-button-wrapper button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 82, 255, 0.4) !important;
+}
+
 .gold-text {
   background: linear-gradient(135deg, #fbbf24 0%, #fde047 100%);
   -webkit-background-clip: text;
