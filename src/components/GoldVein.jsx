@@ -309,9 +309,14 @@ export default function GoldVein() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <FundButton 
-              className="fund-button-header"
-            />
+            <div className="fund-button-wrapper" style={{
+              background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
+              borderRadius: '12px',
+              padding: '2px',
+              boxShadow: '0 4px 15px rgba(0,82,255,0.3)',
+            }}>
+              <FundButton />
+            </div>
             <a 
               href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
               target="_blank" 
@@ -410,22 +415,14 @@ export default function GoldVein() {
                   <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
                     <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '12px' }}>⚠️ You need at least 0.10 BG to activate</div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <FundButton 
-                        className="fund-button-custom"
-                        style={{ 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          gap: '6px', 
-                          background: '#627EEA',
-                          color: '#fff', 
-                          fontSize: '14px', 
-                          fontWeight: 'bold',
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          cursor: 'pointer'
-                        }}
-                      />
+                      <div style={{
+                        background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
+                        borderRadius: '8px',
+                        padding: '2px',
+                        display: 'inline-block'
+                      }}>
+                        <FundButton />
+                      </div>
                       <a 
                         href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
                         target="_blank" 
