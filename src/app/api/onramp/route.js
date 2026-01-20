@@ -12,29 +12,40 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Address required' }, { status: 400 });
     }
 
-    const keyId = process.env.CDP_API_KEY_ID;
+    // Get credentials from environment
+    let keyId = process.env.CDP_API_KEY_ID;
     const keySecret = process.env.CDP_API_KEY_SECRET;
 
     if (!keyId || !keySecret) {
-      console.log('No CDP credentials, using fallback');
+      console.log('Missing CDP credentials - CDP_API_KEY_ID:', !!keyId, 'CDP_API_KEY_SECRET:', !!keySecret);
       return NextResponse.json({ 
         fallback: true,
         url: buildFallbackUrl(address)
       });
     }
 
-    // Format the secret - replace escaped newlines with actual newlines
-    const formattedSecret = keySecret.replace(/\\n/g, '\n');
+    // If key ID is just the UUID, convert to full format
+    // Full format: organizations/{org_id}/apiKeys/{key_id}
+    if (!keyId.startsWith('organizations/')) {
+      // Get org ID from environment or use default
+      const orgId = process.env.CDP_ORG_ID || '43597d07-27e1-42aa-9d2c-d1825884e5fe';
+      keyId = `organizations/${orgId}/apiKeys/${keyId}`;
+    }
+
+    console.log('Using key ID:', keyId);
+    console.log('Secret length:', keySecret.length);
 
     // Generate JWT using the official CDP SDK
     const jwt = await generateJwt({
       apiKeyId: keyId,
-      apiKeySecret: formattedSecret,
+      apiKeySecret: keySecret,
       requestMethod: 'POST',
       requestHost: 'api.developer.coinbase.com',
       requestPath: '/onramp/v1/token',
       expiresIn: 120
     });
+
+    console.log('JWT generated successfully, length:', jwt.length);
 
     // Request session token from Coinbase
     const response = await fetch('https://api.developer.coinbase.com/onramp/v1/token', {
@@ -52,24 +63,42 @@ export async function POST(request) {
       }),
     });
 
+    const responseText = await response.text();
+    console.log('CDP API response status:', response.status);
+    console.log('CDP API response:', responseText);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('CDP API error:', response.status, errorText);
+      console.error('CDP API error:', response.status, responseText);
       return NextResponse.json({ 
         fallback: true,
         url: buildFallbackUrl(address)
       });
     }
 
-    const data = await response.json();
-    
-    if (data.token) {
+    // Parse the response
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse response:', e);
       return NextResponse.json({ 
-        token: data.token,
-        url: `https://pay.coinbase.com/buy?sessionToken=${data.token}`
+        fallback: true,
+        url: buildFallbackUrl(address)
+      });
+    }
+    
+    // Check for token in response (could be at root or nested in data)
+    const token = data.token || (data.data && data.data.token);
+    
+    if (token) {
+      console.log('Session token obtained successfully');
+      return NextResponse.json({ 
+        token: token,
+        url: `https://pay.coinbase.com/buy?sessionToken=${token}`
       });
     }
 
+    console.log('No token in response:', JSON.stringify(data));
     return NextResponse.json({ 
       fallback: true,
       url: buildFallbackUrl(address)
@@ -77,6 +106,7 @@ export async function POST(request) {
     
   } catch (error) {
     console.error('Session token error:', error.message);
+    console.error('Stack:', error.stack);
     return NextResponse.json({ 
       fallback: true,
       url: buildFallbackUrl(address)
