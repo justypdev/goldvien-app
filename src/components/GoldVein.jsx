@@ -206,6 +206,70 @@ export default function GoldVein() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [justActivated, setJustActivated] = useState(false);
+  const [buyEthLoading, setBuyEthLoading] = useState(false);
+
+  // iOS-compatible Buy ETH handler
+  const handleBuyEth = async () => {
+    if (!address) return;
+    setBuyEthLoading(true);
+    
+    // Build fallback URL
+    const fallbackUrl = `https://pay.coinbase.com/buy/select-asset?addresses=${encodeURIComponent(JSON.stringify({[address]: ["base"]}))}&assets=${encodeURIComponent(JSON.stringify(["ETH"]))}`;
+    
+    // Detect platform
+    const isInAppBrowser = /FBAN|FBAV|Instagram|Telegram|Twitter|wv|WebView/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    // For in-app browsers, navigate in same window to avoid popup blocking
+    if (isInAppBrowser) {
+      window.location.href = fallbackUrl;
+      return;
+    }
+    
+    // For iOS Safari: Open window IMMEDIATELY on user gesture, then update URL after API call
+    let newWindow = null;
+    if (isIOS) {
+      newWindow = window.open('about:blank', '_blank');
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head><title>Loading Coinbase...</title></head>
+            <body style="background:#0a0a0f;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+              <div style="text-align:center;">
+                <div style="font-size:48px;margin-bottom:16px;">💰</div>
+                <div style="color:#EAB308;">Loading Coinbase Pay...</div>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+    }
+    
+    try {
+      const res = await fetch('/api/onramp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address }),
+      });
+      const data = await res.json();
+      
+      const targetUrl = data.url || (data.token ? `https://pay.coinbase.com/buy?sessionToken=${data.token}` : fallbackUrl);
+      
+      if (isIOS && newWindow) {
+        newWindow.location.href = targetUrl;
+      } else {
+        window.open(targetUrl, '_blank');
+      }
+    } catch (err) {
+      if (isIOS && newWindow) {
+        newWindow.location.href = fallbackUrl;
+      } else {
+        window.open(fallbackUrl, '_blank');
+      }
+    } finally {
+      setBuyEthLoading(false);
+    }
+  };
 
   useEffect(() => {
     const styleEl = document.createElement('style');
@@ -309,27 +373,14 @@ export default function GoldVein() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
-              onClick={async () => {
+              onClick={() => {
                 if (!address) {
                   setError('Please connect your wallet first');
                   return;
                 }
-                try {
-                  const res = await fetch('/api/onramp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ address }),
-                  });
-                  const data = await res.json();
-                  if (data.url || data.fallback) {
-                    window.open(data.url, '_blank');
-                  } else if (data.token) {
-                    window.open(`https://pay.coinbase.com/buy?sessionToken=${data.token}`, '_blank');
-                  }
-                } catch (err) {
-                  window.open(`https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`, '_blank');
-                }
+                handleBuyEth();
               }}
+              disabled={buyEthLoading}
               style={{ 
                 background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
                 color: '#fff', 
@@ -342,13 +393,14 @@ export default function GoldVein() {
                 alignItems: 'center',
                 gap: '6px',
                 boxShadow: '0 4px 15px rgba(0,82,255,0.3)',
-                cursor: 'pointer',
+                cursor: buyEthLoading ? 'wait' : 'pointer',
+                opacity: buyEthLoading ? 0.7 : 1,
                 transition: 'transform 0.2s, box-shadow 0.2s'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,82,255,0.4)'; }}
+              onMouseOver={(e) => { if (!buyEthLoading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,82,255,0.4)'; } }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,82,255,0.3)'; }}
             >
-              💳 Fund
+              {buyEthLoading ? '⏳ Loading...' : '💳 Fund'}
             </button>
             <a 
               href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
@@ -449,24 +501,8 @@ export default function GoldVein() {
                     <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '12px' }}>⚠️ You need at least 0.10 BG to activate</div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button
-                        onClick={async () => {
-                          if (!address) return;
-                          try {
-                            const res = await fetch('/api/onramp', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ address }),
-                            });
-                            const data = await res.json();
-                            if (data.url || data.fallback) {
-                              window.open(data.url, '_blank');
-                            } else if (data.token) {
-                              window.open(`https://pay.coinbase.com/buy?sessionToken=${data.token}`, '_blank');
-                            }
-                          } catch (err) {
-                            window.open(`https://pay.coinbase.com/buy/select-asset?addresses={"${address}":["base"]}&assets=["ETH"]`, '_blank');
-                          }
-                        }}
+                        onClick={handleBuyEth}
+                        disabled={buyEthLoading}
                         style={{
                           background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
                           color: '#fff',
@@ -478,10 +514,11 @@ export default function GoldVein() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          cursor: 'pointer'
+                          cursor: buyEthLoading ? 'wait' : 'pointer',
+                          opacity: buyEthLoading ? 0.7 : 1
                         }}
                       >
-                        💳 Buy ETH
+                        {buyEthLoading ? '⏳ Loading...' : '💳 Buy ETH'}
                       </button>
                       <a 
                         href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
