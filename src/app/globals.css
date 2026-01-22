@@ -75,3 +75,71 @@ button[class*="FundButton"]:hover,
   100% { transform: scale(1); }
 }
 .animate-pop-in { animation: pop-in 0.5s ease-out forwards; }
+
+/* Responsive Grid Overrides */
+@media (max-width: 768px) {
+  /* 4-column grids become 2 columns on mobile */
+  div[style*="gridTemplateColumns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* 6-column network stats become 3 columns on mobile */
+  div[style*="gridTemplateColumns: repeat(6"] {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  
+  /* 3-column holdings grid becomes stacked on mobile */
+  div[style*="gridTemplateColumns: repeat(3"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Header becomes column on mobile */
+  header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  /* Smaller font sizes on mobile */
+  div[style*="fontSize: '28px'"] {
+    font-size: 20px !important;
+  }
+  
+  div[style*="fontSize: '32px'"] {
+    font-size: 24px !important;
+  }
+  
+  div[style*="fontSize: '36px'"] {
+    font-size: 28px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller screens - 2 column grids become single */
+  div[style*="gridTemplateColumns: repeat(2"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Network stats 2 columns on very small screens */
+  div[style*="gridTemplateColumns: repeat(6"],
+  div[style*="gridTemplateColumns: repeat(3"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3b3b3b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

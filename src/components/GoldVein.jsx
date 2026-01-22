@@ -12,11 +12,14 @@ import { parseEther, formatEther, isAddress } from 'viem';
 
 const BG_TOKEN_ADDRESS = '0x36b712A629095234F2196BbB000D1b96C12Ce78e';
 const GOLD_VEIN_ADDRESS = '0x0520B1D4dF671293F8b4B1F52dDD4f9f687Fd565';
+const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+const INITIAL_SUPPLY = 10000;
 
 const BG_TOKEN_ABI = [
   { name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }] },
   { name: 'allowance', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }], outputs: [{ type: 'uint256' }] },
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  { name: 'totalSupply', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
 ];
 
 const GOLD_VEIN_ABI = [
@@ -54,6 +57,14 @@ const globalStyles = `
     0% { transform: translateY(0) rotate(0deg); opacity: 1; }
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
   }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
 `;
 
 function GoldParticles() {
@@ -74,7 +85,7 @@ function GoldParticles() {
   );
 }
 
-function AnimatedNumber({ value, decimals = 0 }) {
+function AnimatedNumber({ value, decimals = 0, prefix = '', suffix = '' }) {
   const [display, setDisplay] = useState(0);
   const prevRef = useRef(0);
   useEffect(() => {
@@ -90,7 +101,255 @@ function AnimatedNumber({ value, decimals = 0 }) {
       requestAnimationFrame(animate);
     }
   }, [value]);
-  return <>{display.toFixed(decimals)}</>;
+  return <>{prefix}{display.toFixed(decimals)}{suffix}</>;
+}
+
+// Holdings Dashboard Component
+function HoldingsDashboard({ bgBalance, priceData, totalSupply, isConnected }) {
+  const balance = bgBalance ? parseFloat(formatEther(bgBalance)) : 0;
+  const price = priceData?.price || 0;
+  const usdValue = balance * price;
+  const percentOfSupply = totalSupply > 0 ? (balance / totalSupply) * 100 : 0;
+  
+  if (!isConnected) return null;
+  
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(120,80,0,0.5), rgba(20,20,20,0.9))',
+      border: '2px solid rgba(234,179,8,0.5)',
+      borderRadius: '20px',
+      padding: '24px',
+      marginBottom: '24px',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Background Shimmer */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.1), transparent)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 3s linear infinite',
+        pointerEvents: 'none',
+      }} />
+      
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <span style={{ fontSize: '24px' }}>👛</span>
+          <h3 style={{ 
+            margin: 0, 
+            fontSize: '18px', 
+            fontWeight: 'bold',
+            background: 'linear-gradient(90deg, #FBBF24, #FDE047)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>YOUR BG HOLDINGS</h3>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {/* BG Balance */}
+          <div style={{
+            background: 'rgba(0,0,0,0.4)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            border: '1px solid rgba(234,179,8,0.3)',
+          }}>
+            <div style={{ color: '#EAB308', fontSize: '12px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Balance
+            </div>
+            <div style={{ 
+              fontSize: '28px', 
+              fontWeight: '900', 
+              color: '#FDE047',
+              fontFamily: 'monospace',
+            }}>
+              <AnimatedNumber value={balance} decimals={4} />
+            </div>
+            <div style={{ color: '#CA8A04', fontSize: '14px', marginTop: '4px' }}>BG</div>
+          </div>
+          
+          {/* USD Value */}
+          <div style={{
+            background: 'rgba(0,0,0,0.4)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            border: '1px solid rgba(34,197,94,0.3)',
+          }}>
+            <div style={{ color: '#22C55E', fontSize: '12px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              USD Value
+            </div>
+            <div style={{ 
+              fontSize: '28px', 
+              fontWeight: '900', 
+              color: '#4ADE80',
+              fontFamily: 'monospace',
+            }}>
+              ${usdValue.toFixed(2)}
+            </div>
+            <div style={{ color: '#16a34a', fontSize: '14px', marginTop: '4px' }}>@ ${price.toFixed(4)}/BG</div>
+          </div>
+          
+          {/* % of Supply */}
+          <div style={{
+            background: 'rgba(0,0,0,0.4)',
+            borderRadius: '16px',
+            padding: '20px',
+            textAlign: 'center',
+            border: '1px solid rgba(147,51,234,0.3)',
+          }}>
+            <div style={{ color: '#A855F7', fontSize: '12px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              % of Supply
+            </div>
+            <div style={{ 
+              fontSize: '28px', 
+              fontWeight: '900', 
+              color: '#C084FC',
+              fontFamily: 'monospace',
+            }}>
+              {percentOfSupply.toFixed(4)}%
+            </div>
+            <div style={{ color: '#9333EA', fontSize: '14px', marginTop: '4px' }}>of {totalSupply.toLocaleString()} BG</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// BaseGold Network Stats Component
+function NetworkStats({ priceData, totalSupply, totalBurned }) {
+  const scarcityFactor = totalSupply > 0 ? Math.round(21000000 / totalSupply) : 0;
+  
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(30,30,40,0.9), rgba(10,10,15,0.95))',
+      border: '1px solid rgba(234,179,8,0.2)',
+      borderRadius: '16px',
+      padding: '20px',
+      marginBottom: '24px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '20px' }}>📊</span>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#FBBF24' }}>
+            BASEGOLD NETWORK
+          </h3>
+        </div>
+        <a 
+          href="https://basegold.io" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ 
+            color: '#CA8A04', 
+            fontSize: '12px', 
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          basegold.io ↗
+        </a>
+      </div>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+        {/* Price */}
+        <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
+          <div style={{ color: '#6B7280', fontSize: '11px', marginBottom: '4px' }}>PRICE</div>
+          <div style={{ color: '#FDE047', fontWeight: 'bold', fontSize: '14px', fontFamily: 'monospace' }}>
+            ${priceData?.price?.toFixed(4) || '---'}
+          </div>
+        </div>
+        
+        {/* 24h Change */}
+        <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
+          <div style={{ color: '#6B7280', fontSize: '11px', marginBottom: '4px' }}>24H</div>
+          <div style={{ 
+            color: priceData?.change24h >= 0 ? '#4ADE80' : '#EF4444', 
+            fontWeight: 'bold', 
+            fontSize: '14px' 
+          }}>
+            {priceData?.change24h !== undefined 
+              ? `${priceData.change24h >= 0 ? '+' : ''}${priceData.change24h.toFixed(2)}%` 
+              : '---'}
+          </div>
+        </div>
+        
+        {/* Market Cap */}
+        <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
+          <div style={{ color: '#6B7280', fontSize: '11px', marginBottom: '4px' }}>MCAP</div>
+          <div style={{ color: '#60A5FA', fontWeight: 'bold', fontSize: '14px' }}>
+            ${priceData?.marketCap ? formatCompact(priceData.marketCap) : '---'}
+          </div>
+        </div>
+        
+        {/* Volume */}
+        <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
+          <div style={{ color: '#6B7280', fontSize: '11px', marginBottom: '4px' }}>24H VOL</div>
+          <div style={{ color: '#34D399', fontWeight: 'bold', fontSize: '14px' }}>
+            ${priceData?.volume24h ? formatCompact(priceData.volume24h) : '---'}
+          </div>
+        </div>
+        
+        {/* Supply */}
+        <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
+          <div style={{ color: '#6B7280', fontSize: '11px', marginBottom: '4px' }}>SUPPLY</div>
+          <div style={{ color: '#FBBF24', fontWeight: 'bold', fontSize: '14px' }}>
+            {totalSupply.toLocaleString()}
+          </div>
+        </div>
+        
+        {/* Scarcity */}
+        <div style={{ textAlign: 'center', padding: '12px 8px', background: 'linear-gradient(135deg, rgba(234,179,8,0.2), rgba(0,0,0,0.3))', borderRadius: '12px', border: '1px solid rgba(234,179,8,0.3)' }}>
+          <div style={{ color: '#EAB308', fontSize: '11px', marginBottom: '4px' }}>vs BTC</div>
+          <div style={{ 
+            color: '#FDE047', 
+            fontWeight: '900', 
+            fontSize: '14px',
+            textShadow: '0 0 10px rgba(234,179,8,0.5)',
+          }}>
+            {scarcityFactor.toLocaleString()}x
+          </div>
+        </div>
+      </div>
+      
+      {/* Burn Progress */}
+      <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ color: '#FCA5A5', fontSize: '12px' }}>🔥 TOTAL BURNED</span>
+          <span style={{ color: '#EF4444', fontWeight: 'bold', fontFamily: 'monospace' }}>
+            {totalBurned.toFixed(4)} BG
+          </span>
+        </div>
+        <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '8px', height: '8px', overflow: 'hidden' }}>
+          <div style={{ 
+            width: `${(totalBurned / INITIAL_SUPPLY) * 100}%`, 
+            height: '100%', 
+            background: 'linear-gradient(90deg, #EF4444, #F97316)',
+            borderRadius: '8px',
+            transition: 'width 1s ease-out',
+          }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>0%</span>
+          <span style={{ color: '#F87171', fontSize: '10px' }}>{((totalBurned / INITIAL_SUPPLY) * 100).toFixed(2)}% of initial supply</span>
+          <span style={{ color: '#6B7280', fontSize: '10px' }}>100%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Format large numbers compactly
+function formatCompact(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
+  return num.toFixed(2);
 }
 
 function ReferralTree({ userProfile }) {
@@ -207,6 +466,78 @@ export default function GoldVein() {
   const [success, setSuccess] = useState('');
   const [justActivated, setJustActivated] = useState(false);
   const [buyEthLoading, setBuyEthLoading] = useState(false);
+  const [priceData, setPriceData] = useState(null);
+  const [tokenStats, setTokenStats] = useState({ totalSupply: INITIAL_SUPPLY, totalBurned: 0 });
+
+  // Fetch price data from DexScreener
+  useEffect(() => {
+    const fetchPriceData = async () => {
+      try {
+        const response = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x36b712A629095234F2196BbB000D1b96C12Ce78e');
+        const data = await response.json();
+        
+        if (data.pairs && data.pairs.length > 0) {
+          const basePairs = data.pairs.filter(p => p.chainId === 'base');
+          const mainPair = basePairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+          
+          if (mainPair) {
+            setPriceData({
+              price: parseFloat(mainPair.priceUsd) || 0,
+              change24h: parseFloat(mainPair.priceChange?.h24) || 0,
+              volume24h: mainPair.volume?.h24 || 0,
+              marketCap: mainPair.fdv || 0,
+              liquidity: mainPair.liquidity?.usd || 0,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching price data:', error);
+      }
+    };
+
+    fetchPriceData();
+    const interval = setInterval(fetchPriceData, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Read total supply and calculate burned from chain
+  const { data: totalSupplyRaw } = useReadContract({
+    address: BG_TOKEN_ADDRESS,
+    abi: BG_TOKEN_ABI,
+    functionName: 'totalSupply',
+  });
+  
+  const { data: contractBalance } = useReadContract({
+    address: BG_TOKEN_ADDRESS,
+    abi: BG_TOKEN_ABI,
+    functionName: 'balanceOf',
+    args: [BG_TOKEN_ADDRESS],
+  });
+  
+  const { data: deadBalance } = useReadContract({
+    address: BG_TOKEN_ADDRESS,
+    abi: BG_TOKEN_ABI,
+    functionName: 'balanceOf',
+    args: [DEAD_ADDRESS],
+  });
+
+  // Calculate token stats
+  useEffect(() => {
+    if (totalSupplyRaw) {
+      const totalSupply = parseFloat(formatEther(totalSupplyRaw));
+      const contractBal = contractBalance ? parseFloat(formatEther(contractBalance)) : 0;
+      const deadBal = deadBalance ? parseFloat(formatEther(deadBalance)) : 0;
+      
+      const actualBurned = INITIAL_SUPPLY - totalSupply;
+      const totalBurned = actualBurned + contractBal + deadBal;
+      const effectiveSupply = totalSupply - contractBal - deadBal;
+      
+      setTokenStats({
+        totalSupply: effectiveSupply,
+        totalBurned: totalBurned,
+      });
+    }
+  }, [totalSupplyRaw, contractBalance, deadBalance]);
 
   // iOS-compatible Buy ETH handler
   const handleBuyEth = async () => {
@@ -361,7 +692,7 @@ export default function GoldVein() {
 
       <div style={{ position: 'relative', zIndex: 10, maxWidth: '1100px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Header */}
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #EAB308', boxShadow: '0 0 20px rgba(234,179,8,0.4)' }}>
               <img src="https://basegold.io/logov2.jpg" alt="BG" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -371,7 +702,7 @@ export default function GoldVein() {
               <p style={{ color: '#CA8A04', fontSize: '14px', margin: 0 }}>7-Level Passive Income</p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <button
               onClick={() => {
                 if (!address) {
@@ -429,17 +760,32 @@ export default function GoldVein() {
           </div>
         </header>
 
-        {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        {/* BaseGold Network Stats */}
+        <NetworkStats 
+          priceData={priceData} 
+          totalSupply={tokenStats.totalSupply}
+          totalBurned={tokenStats.totalBurned}
+        />
+
+        {/* User Holdings Dashboard */}
+        <HoldingsDashboard 
+          bgBalance={bgBalance}
+          priceData={priceData}
+          totalSupply={tokenStats.totalSupply}
+          isConnected={isConnected}
+        />
+
+        {/* Gold Vein Stats Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
           {[
             { label: '⛏️ Miners', value: globalStats?.[0]?.toString() || '0', color: '#EAB308', bg: 'rgba(120,80,0,0.4)' },
-            { label: '🔥 Burned', value: fmtBG(globalStats?.[2]) + ' BG', color: '#EF4444', bg: 'rgba(127,29,29,0.4)' },
+            { label: '🔥 GV Burned', value: fmtBG(globalStats?.[2]) + ' BG', color: '#EF4444', bg: 'rgba(127,29,29,0.4)' },
             { label: '💰 Rewards', value: fmtBG(globalStats?.[3]) + ' BG', color: '#22C55E', bg: 'rgba(20,83,45,0.4)' },
             { label: '🎯 Activations', value: globalStats?.[1]?.toString() || '0', color: '#3B82F6', bg: 'rgba(30,58,138,0.4)' },
           ].map((stat, i) => (
             <div key={i} style={{ background: stat.bg, border: `1px solid ${stat.color}40`, borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
               <div style={{ color: stat.color, fontSize: '13px', marginBottom: '4px' }}>{stat.label}</div>
-              <div style={{ fontSize: '24px', fontWeight: '900', color: stat.color }}>{stat.value}</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: stat.color }}>{stat.value}</div>
             </div>
           ))}
         </div>
@@ -448,136 +794,149 @@ export default function GoldVein() {
         {!isConnected ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ width: '120px', height: '120px', margin: '0 auto 32px', borderRadius: '50%', overflow: 'hidden', border: '4px solid rgba(234,179,8,0.5)', boxShadow: '0 0 40px rgba(234,179,8,0.3)', animation: 'pulseGlow 2s ease-in-out infinite' }}>
-              <img src="https://basegold.io/logov2.jpg" alt="BG" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src="https://basegold.io/logov2.jpg" alt="BaseGold" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h2 style={{ fontSize: '42px', fontWeight: '900', marginBottom: '16px', background: 'linear-gradient(to right, #FBBF24, #FDE047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Enter the Gold Vein</h2>
-            <p style={{ color: '#CA8A04', fontSize: '18px', maxWidth: '500px', margin: '0 auto 40px' }}>Mine passive income through 7 levels of referrals. Connect your wallet to get started.</p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '800px', margin: '0 auto 40px' }}>
-              <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.4), rgba(0,0,0,0.6))', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '16px', padding: '24px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px' }}>💰</div>
-                <div style={{ color: '#FBBF24', fontWeight: 'bold', marginBottom: '8px' }}>95% to Users</div>
-                <div style={{ color: '#9CA3AF', fontSize: '14px' }}>Rewards go directly to your network</div>
-              </div>
-              <div style={{ background: 'linear-gradient(135deg, rgba(127,29,29,0.4), rgba(0,0,0,0.6))', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '24px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔥</div>
-                <div style={{ color: '#EF4444', fontWeight: 'bold', marginBottom: '8px' }}>5% Burned</div>
-                <div style={{ color: '#9CA3AF', fontSize: '14px' }}>Deflationary with every activation</div>
-              </div>
-              <div style={{ background: 'linear-gradient(135deg, rgba(20,83,45,0.4), rgba(0,0,0,0.6))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '16px', padding: '24px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎯</div>
-                <div style={{ color: '#22C55E', fontWeight: 'bold', marginBottom: '8px' }}>Profit at 2 Refs</div>
-                <div style={{ color: '#9CA3AF', fontSize: '14px' }}>2 × 0.06 = 0.12 BG profit!</div>
-              </div>
+            <h2 style={{ fontSize: '36px', fontWeight: '900', marginBottom: '16px', background: 'linear-gradient(to right, #FBBF24, #FDE047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>START YOUR GOLD MINE</h2>
+            <p style={{ color: '#6B7280', fontSize: '18px', marginBottom: '32px', maxWidth: '500px', margin: '0 auto 32px' }}>Earn up to 95% passive income across 7 levels. Only 0.10 BG to start!</p>
+            
+            <div style={{ display: 'inline-block' }}>
+              <ConnectButton />
             </div>
-
-            <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '16px', padding: '24px', maxWidth: '600px', margin: '0 auto' }}>
-              <div style={{ color: '#FBBF24', fontWeight: 'bold', marginBottom: '16px', fontSize: '18px' }}>7-Level Distribution</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                {['L1: 60%', 'L2: 14%', 'L3: 9%', 'L4: 5%', 'L5: 4%', 'L6: 2%', 'L7: 1%'].map((level, i) => (
-                  <span key={i} style={{ background: 'rgba(234,179,8,0.2)', color: '#FBBF24', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>{level}</span>
-                ))}
-              </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', maxWidth: '800px', margin: '48px auto 0' }}>
+              {[
+                { icon: '⛏️', title: '0.10 BG Entry', desc: 'Low barrier to entry' },
+                { icon: '💎', title: '95% to Users', desc: 'Maximized returns' },
+                { icon: '🔥', title: '5% Burned', desc: 'Deflationary model' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '24px', background: 'rgba(0,0,0,0.4)', borderRadius: '16px', border: '1px solid rgba(234,179,8,0.2)' }}>
+                  <div style={{ fontSize: '32px', marginBottom: '12px' }}>{item.icon}</div>
+                  <div style={{ color: '#FBBF24', fontWeight: 'bold', marginBottom: '4px' }}>{item.title}</div>
+                  <div style={{ color: '#6B7280', fontSize: '14px' }}>{item.desc}</div>
+                </div>
+              ))}
             </div>
           </div>
-        ) : !isUserActivated && !justActivated ? (
-          <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-            <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '2px solid rgba(234,179,8,0.5)', borderRadius: '24px', padding: '40px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                <div style={{ width: '100px', height: '100px', margin: '0 auto 20px', borderRadius: '50%', background: 'linear-gradient(135deg, #EAB308, #F59E0B)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '50px', boxShadow: '0 0 40px rgba(234,179,8,0.5)', animation: 'bounce 2s ease-in-out infinite' }}>⛏️</div>
-                <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#FBBF24', marginBottom: '8px' }}>Open Your Gold Mine</h2>
-                <p style={{ color: '#CA8A04', fontSize: '18px' }}>Activation Fee: <strong>0.10 BG</strong></p>
-              </div>
+        ) : !(isUserActivated || justActivated) ? (
+          <div style={{ maxWidth: '600px', margin: '0 auto', padding: '32px', background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.8))', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '24px' }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '900', textAlign: 'center', marginBottom: '32px', background: 'linear-gradient(to right, #FBBF24, #FDE047)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>⛏️ OPEN YOUR GOLD MINE</h2>
 
-              <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid #374151' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#9CA3AF', fontSize: '16px' }}>Your BG Balance:</span>
-                  <span style={{ fontWeight: 'bold', fontSize: '24px', color: hasBalance ? '#4ADE80' : '#EF4444' }}>{fmtBG(bgBalance)} BG</span>
-                </div>
-                {hasBalance ? (
-                  <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px', textAlign: 'right' }}>✓ Sufficient balance</div>
-                ) : (
-                  <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
-                    <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '12px' }}>⚠️ You need at least 0.10 BG to activate</div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={handleBuyEth}
-                        disabled={buyEthLoading}
-                        style={{
-                          background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
-                          color: '#fff',
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          fontWeight: 'bold',
-                          fontSize: '14px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          cursor: buyEthLoading ? 'wait' : 'pointer',
-                          opacity: buyEthLoading ? 0.7 : 1
-                        }}
-                      >
-                        {buyEthLoading ? '⏳ Loading...' : '💳 Buy ETH'}
-                      </button>
-                      <a 
-                        href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          gap: '6px', 
-                          color: '#4ADE80', 
-                          fontSize: '14px', 
-                          fontWeight: 'bold',
-                          textDecoration: 'none'
-                        }}
-                      >
-                        💰 Buy BG on Uniswap →
-                      </a>
-                    </div>
-                  </div>
-                )}
+            <div style={{ marginBottom: '24px', padding: '16px', background: 'rgba(0,0,0,0.4)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#6B7280' }}>Your BG Balance:</span>
+                <span style={{ fontWeight: 'bold', fontSize: '24px', color: hasBalance ? '#4ADE80' : '#EF4444' }}>{fmtBG(bgBalance)} BG</span>
               </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', color: '#EAB308', marginBottom: '8px', fontWeight: 'bold', fontSize: '16px' }}>Referrer Address</label>
-                <input 
-                  type="text" 
-                  value={referrerInput} 
-                  onChange={(e) => setReferrerInput(e.target.value)} 
-                  placeholder="0x..."
-                  style={{ width: '100%', background: 'rgba(0,0,0,0.6)', border: '2px solid rgba(234,179,8,0.3)', borderRadius: '12px', padding: '16px', color: '#fff', fontSize: '16px', fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box' }} 
-                />
-                {referrerInput && isAddress(referrerInput) && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px' }}>✓ Valid address</div>}
-              </div>
-
-              {needsApproval ? (
-                <button onClick={handleApprove} disabled={isApproving || !hasBalance} style={buttonStyle(hasBalance && !isApproving)}>
-                  {isApproving ? '⏳ Approving...' : '1️⃣ APPROVE BG TOKEN'}
-                </button>
+              {hasBalance ? (
+                <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px', textAlign: 'right' }}>✓ Sufficient balance</div>
               ) : (
-                <button onClick={handleActivate} disabled={isActivating || !hasBalance || !referrerInput || !isAddress(referrerInput)} style={buttonStyle(hasBalance && !isActivating && referrerInput && isAddress(referrerInput))}>
-                  {isActivating ? '⛏️ Opening Mine...' : '⛏️ OPEN GOLD MINE (0.10 BG)'}
-                </button>
+                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '12px' }}>⚠️ You need at least 0.10 BG to activate</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={handleBuyEth}
+                      disabled={buyEthLoading}
+                      style={{
+                        background: 'linear-gradient(135deg, #0052FF, #3B82F6)',
+                        color: '#fff',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: buyEthLoading ? 'wait' : 'pointer',
+                        opacity: buyEthLoading ? 0.7 : 1
+                      }}
+                    >
+                      {buyEthLoading ? '⏳ Loading...' : '💳 Buy ETH'}
+                    </button>
+                    <a 
+                      href="https://app.uniswap.org/swap?outputCurrency=0x36b712A629095234F2196BbB000D1b96C12Ce78e&chain=base" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px', 
+                        color: '#4ADE80', 
+                        fontSize: '14px', 
+                        fontWeight: 'bold',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      💰 Buy BG on Uniswap →
+                    </a>
+                  </div>
+                </div>
               )}
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: needsApproval ? '#EAB308' : '#22C55E', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>{needsApproval ? '1' : '✓'}</div>
-                  <span style={{ color: needsApproval ? '#EAB308' : '#22C55E', fontSize: '14px' }}>Approve</span>
-                </div>
-                <div style={{ width: '40px', height: '2px', background: '#374151', alignSelf: 'center' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: !needsApproval ? '#EAB308' : '#374151', color: !needsApproval ? '#000' : '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>2</div>
-                  <span style={{ color: !needsApproval ? '#EAB308' : '#6B7280', fontSize: '14px' }}>Activate</span>
-                </div>
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', color: '#EAB308', marginBottom: '8px', fontWeight: 'bold', fontSize: '16px' }}>Referrer Address</label>
+              <input 
+                type="text" 
+                value={referrerInput} 
+                onChange={(e) => setReferrerInput(e.target.value)} 
+                placeholder="0x..."
+                style={{ width: '100%', background: 'rgba(0,0,0,0.6)', border: '2px solid rgba(234,179,8,0.3)', borderRadius: '12px', padding: '16px', color: '#fff', fontSize: '16px', fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box' }} 
+              />
+              {referrerInput && isAddress(referrerInput) && <div style={{ color: '#4ADE80', fontSize: '14px', marginTop: '8px' }}>✓ Valid address</div>}
+            </div>
+
+            {needsApproval ? (
+              <button onClick={handleApprove} disabled={isApproving || !hasBalance} style={buttonStyle(hasBalance && !isApproving)}>
+                {isApproving ? '⏳ Approving...' : '1️⃣ APPROVE BG TOKEN'}
+              </button>
+            ) : (
+              <button onClick={handleActivate} disabled={isActivating || !hasBalance || !referrerInput || !isAddress(referrerInput)} style={buttonStyle(hasBalance && !isActivating && referrerInput && isAddress(referrerInput))}>
+                {isActivating ? '⛏️ Opening Mine...' : '⛏️ OPEN GOLD MINE (0.10 BG)'}
+              </button>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: needsApproval ? '#EAB308' : '#22C55E', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>{needsApproval ? '1' : '✓'}</div>
+                <span style={{ color: needsApproval ? '#EAB308' : '#22C55E', fontSize: '14px' }}>Approve</span>
+              </div>
+              <div style={{ width: '40px', height: '2px', background: '#374151', alignSelf: 'center' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: !needsApproval ? '#EAB308' : '#374151', color: !needsApproval ? '#000' : '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>2</div>
+                <span style={{ color: !needsApproval ? '#EAB308' : '#6B7280', fontSize: '14px' }}>Activate</span>
               </div>
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* User Earnings Summary */}
+            {userProfile && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(22,101,52,0.4), rgba(0,0,0,0.8))',
+                border: '1px solid rgba(34,197,94,0.4)',
+                borderRadius: '16px',
+                padding: '20px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '28px' }}>💰</span>
+                    <div>
+                      <div style={{ color: '#86EFAC', fontSize: '12px', textTransform: 'uppercase' }}>Your Gold Vein Earnings</div>
+                      <div style={{ fontSize: '32px', fontWeight: '900', color: '#4ADE80', fontFamily: 'monospace' }}>
+                        {userProfile?.[4] ? parseFloat(formatEther(userProfile[4])).toFixed(4) : '0.0000'} BG
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: '#6B7280', fontSize: '12px' }}>USD Value</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#22C55E' }}>
+                      ${priceData?.price ? (parseFloat(formatEther(userProfile?.[4] || 0n)) * priceData.price).toFixed(2) : '---'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
               <div style={{ background: 'linear-gradient(135deg, rgba(120,80,0,0.3), rgba(0,0,0,0.6))', border: '1px solid rgba(234,179,8,0.4)', borderRadius: '16px', padding: '24px' }}>
                 <h3 style={{ color: '#FBBF24', fontWeight: 'bold', marginBottom: '16px', fontSize: '18px' }}>🔗 Your Referral Link</h3>
@@ -614,7 +973,11 @@ export default function GoldVein() {
         <footer style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid rgba(234,179,8,0.2)', textAlign: 'center' }}>
           <div style={{ color: '#EAB308', fontWeight: 'bold', marginBottom: '8px' }}>GOLD VEIN by BaseGold.io</div>
           <div style={{ color: '#4B5563', fontSize: '14px' }}>95% to users • 5% burned • No middleman</div>
-          <a href={`https://basescan.org/address/${GOLD_VEIN_ADDRESS}`} target="_blank" rel="noopener noreferrer" style={{ color: '#CA8A04', fontSize: '14px', marginTop: '8px', display: 'inline-block', textDecoration: 'none' }}>View Contract ↗</a>
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center', gap: '16px' }}>
+            <a href="https://basegold.io" target="_blank" rel="noopener noreferrer" style={{ color: '#CA8A04', fontSize: '14px', textDecoration: 'none' }}>🌐 Website</a>
+            <a href={`https://basescan.org/address/${GOLD_VEIN_ADDRESS}`} target="_blank" rel="noopener noreferrer" style={{ color: '#CA8A04', fontSize: '14px', textDecoration: 'none' }}>📜 Contract</a>
+            <a href="https://dexscreener.com/base/0x36b712a629095234f2196bbb000d1b96c12ce78e" target="_blank" rel="noopener noreferrer" style={{ color: '#CA8A04', fontSize: '14px', textDecoration: 'none' }}>📊 Chart</a>
+          </div>
         </footer>
       </div>
     </div>
